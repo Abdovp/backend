@@ -14,7 +14,12 @@ class Base(DeclarativeBase):
 
 def get_database_url() -> str | None:
     url = os.getenv("DATABASE_URL", "").strip()
-    return url or None
+    if not url:
+        return None
+    # EasyPanel/Heroku use postgres:// — SQLAlchemy requires postgresql://
+    if url.startswith("postgres://"):
+        url = "postgresql://" + url[len("postgres://") :]
+    return url
 
 
 def get_engine() -> Engine | None:
