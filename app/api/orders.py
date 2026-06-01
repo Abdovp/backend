@@ -3,21 +3,12 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
-from app.database import SessionLocal, get_engine
+from app.deps import get_db
+from app.database import get_engine
 from app.schemas.order import OrderCreate, OrderItemResponse, OrderResponse
 from app.services.orders import create_order, notify_google_sheet
 
 router = APIRouter(prefix="/api/orders", tags=["orders"])
-
-
-def get_db():
-    if get_engine() is None:
-        raise HTTPException(status_code=503, detail="Database not configured")
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
 
 
 @router.post("", response_model=OrderResponse)

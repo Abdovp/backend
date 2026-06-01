@@ -1,3 +1,4 @@
+import json
 import logging
 
 import requests
@@ -72,6 +73,23 @@ def create_order(db: Session, data: OrderCreate, client_ip: str | None, user_age
             event_id=data.event_id,
             event_name="Purchase",
             order_id=order.id,
+            event_data=json.dumps(
+                {
+                    "total": float(order.total),
+                    "items": [
+                        {
+                            "product_id": item.product_id,
+                            "product_name": item.product_name,
+                            "offer": item.offer,
+                            "quantity": item.quantity,
+                            "unit_price": float(item.unit_price),
+                            "line_total": float(item.line_total),
+                        }
+                        for item in order.items
+                    ],
+                },
+                ensure_ascii=False,
+            ),
             platforms=",".join(sent),
         )
     )
