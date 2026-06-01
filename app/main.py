@@ -2,12 +2,14 @@ from dotenv import load_dotenv
 from sqlalchemy import func, select
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+import logging
 
 from app.api.events import router as events_router
 from app.api.orders import router as orders_router
 from app.database import SessionLocal, check_database_connection, get_engine, init_db
 
 load_dotenv()
+logging.basicConfig(level=logging.INFO)
 
 app = FastAPI(title="Boya Shop API", version="1.0.0")
 
