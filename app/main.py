@@ -7,7 +7,14 @@ import logging
 from app.core.config import get_settings
 from app.api.events import router as events_router
 from app.api.orders import router as orders_router
-from app.database import SessionLocal, check_database_connection, get_engine, init_db
+from app.database import (
+    SessionLocal,
+    check_database_connection,
+    get_database_target,
+    get_engine,
+    get_existing_tables,
+    init_db,
+)
 
 load_dotenv()
 logging.basicConfig(level=logging.INFO)
@@ -44,8 +51,10 @@ def health():
 @app.get("/health/db")
 def health_db():
     ok, detail = check_database_connection()
+    tables = get_existing_tables() if ok else []
+    missing = [name for name in ("orders", "order_items", "tracking_events", "alembic_version") if name not in tables]
     stats = {}
-    if ok:
+    if ok and not missing:
         engine = get_engine()
         if engine:
             from app.models.order import Order, OrderItem
@@ -57,7 +66,14 @@ def health_db():
                     "order_items": db.scalar(select(func.count()).select_from(OrderItem)) or 0,
                     "tracking_events": db.scalar(select(func.count()).select_from(TrackingEvent)) or 0,
                 }
-    return {"status": "ok" if ok else "error", "database": detail, "stats": stats}
+    return {
+        "status": "ok" if ok and not missing else "error",
+        "database": detail,
+        "target": get_database_target(),
+        "tables": tables,
+        "missing_tables": missing,
+        "stats": stats,
+    }
 
 
 app.include_router(orders_router)
