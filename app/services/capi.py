@@ -50,7 +50,7 @@ def send_facebook_purchase(payload: dict[str, Any]) -> bool:
         "event_time": int(time.time()),
         "event_id": payload["event_id"],
         "action_source": "website",
-        "event_source_url": payload.get("source_url") or f"https://{settings.domain or 'boya-shop.online'}/thank-you",
+        "event_source_url": payload.get("source_url") or f"{settings.frontend_url.rstrip('/')}/thank-you",
         "user_data": user_data,
         "custom_data": {
             "currency": "MAD",
@@ -62,7 +62,7 @@ def send_facebook_purchase(payload: dict[str, Any]) -> bool:
         },
     }
 
-    url = f"https://graph.facebook.com/v19.0/{settings.facebook_pixel_id}/events"
+    url = f"https://graph.facebook.com/{settings.meta_api_version}/{settings.facebook_pixel_id}/events"
     try:
         response = requests.post(
             url,
@@ -112,7 +112,7 @@ def send_tiktok_purchase(payload: dict[str, Any]) -> bool:
 
     try:
         response = requests.post(
-            "https://business-api.tiktok.com/open_api/v1.3/event/track/",
+            f"https://business-api.tiktok.com/open_api/{settings.tiktok_api_version}/event/track/",
             headers={"Access-Token": settings.tiktok_capi_token, "Content-Type": "application/json"},
             json=body,
             timeout=10,
@@ -171,14 +171,18 @@ def send_snapchat_purchase(payload: dict[str, Any]) -> bool:
 
 
 def dispatch_purchase_events(payload: dict[str, Any]) -> list[str]:
+    settings = get_settings()
+    if not settings.enable_capi:
+        return []
+
     payload = {**payload, "event_name": "Purchase"}
     sent: list[str] = []
 
-    if send_facebook_purchase(payload):
+    if settings.enable_meta_capi and send_facebook_purchase(payload):
         sent.append("facebook")
-    if send_tiktok_purchase(payload):
+    if settings.enable_tiktok_capi and send_tiktok_purchase(payload):
         sent.append("tiktok")
-    if send_snapchat_purchase(payload):
+    if settings.enable_snap_capi and send_snapchat_purchase(payload):
         sent.append("snapchat")
 
     return sent

@@ -4,6 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import logging
 
+from app.core.config import get_settings
 from app.api.events import router as events_router
 from app.api.orders import router as orders_router
 from app.database import SessionLocal, check_database_connection, get_engine, init_db
@@ -11,17 +12,13 @@ from app.database import SessionLocal, check_database_connection, get_engine, in
 load_dotenv()
 logging.basicConfig(level=logging.INFO)
 
-app = FastAPI(title="Boya Shop API", version="1.0.0")
+settings = get_settings()
 
-origins = [
-    "https://boya-shop.online",
-    "https://www.boya-shop.online",
-    "http://localhost:3000",
-]
+app = FastAPI(title=settings.app_name, version="1.0.0")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=settings.cors_origins,
     allow_origin_regex=r"https://.*\.easypanel\.host",
     allow_credentials=True,
     allow_methods=["*"],
