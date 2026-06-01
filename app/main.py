@@ -1,6 +1,10 @@
+from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-import os
+
+from app.database import check_database_connection
+
+load_dotenv()
 
 app = FastAPI(title="Boya Shop API", version="1.0.0")
 
@@ -18,6 +22,18 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 @app.get("/")
 def root():
     return {"message": "Boya Shop API is running"}
+
+
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
+
+@app.get("/health/db")
+def health_db():
+    ok, detail = check_database_connection()
+    return {"status": "ok" if ok else "error", "database": detail}
