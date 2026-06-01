@@ -47,8 +47,8 @@ class Settings:
     def __init__(self):
         self.app_env = _env("APP_ENV") or "production"
         self.app_name = _env("APP_NAME") or "Boya Shop API"
-        self.api_base_url = _env("API_BASE_URL", "DOMAIN") or "https://api.boya-shop.online"
-        self.frontend_url = _env("FRONTEND_URL") or "https://boya-shop.online"
+        self.api_base_url = _env("API_BASE_URL", "DOMAIN") or "https://api.boyashop.store"
+        self.frontend_url = _env("FRONTEND_URL") or "https://boyashop.store"
         self.database_url = _env("DATABASE_URL")
 
         cors_raw = _env("CORS_ORIGINS")
@@ -56,8 +56,8 @@ class Settings:
             self.cors_origins = [origin.strip() for origin in cors_raw.split(",") if origin.strip()]
         else:
             self.cors_origins = [
-                "https://boya-shop.online",
-                "https://www.boya-shop.online",
+                "https://boyashop.store",
+                "https://www.boyashop.store",
                 "http://localhost:3000",
             ]
 
