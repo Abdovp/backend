@@ -6,7 +6,8 @@ app = FastAPI(title="Boya Shop API", version="1.0.0")
 
 origins = [
     "https://boya-shop.online",
-    "http://localhost:3000"
+    "https://www.boya-shop.online",
+    "http://localhost:3000",
 ]
 
 app.add_middleware(
