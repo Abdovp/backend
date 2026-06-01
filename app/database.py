@@ -2,8 +2,14 @@ import os
 
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import Engine
+from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
 _engine: Engine | None = None
+SessionLocal = sessionmaker(autocommit=False, autoflush=False)
+
+
+class Base(DeclarativeBase):
+    pass
 
 
 def get_database_url() -> str | None:
@@ -18,7 +24,18 @@ def get_engine() -> Engine | None:
         return None
     if _engine is None:
         _engine = create_engine(url, pool_pre_ping=True)
+        SessionLocal.configure(bind=_engine)
     return _engine
+
+
+def init_db() -> None:
+    engine = get_engine()
+    if engine is None:
+        return
+
+    from app import models  # noqa: F401
+
+    Base.metadata.create_all(bind=engine)
 
 
 def check_database_connection() -> tuple[bool, str]:

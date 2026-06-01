@@ -2,7 +2,8 @@ from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.database import check_database_connection
+from app.api.orders import router as orders_router
+from app.database import check_database_connection, init_db
 
 load_dotenv()
 
@@ -17,10 +18,16 @@ origins = [
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
+    allow_origin_regex=r"https://.*\.easypanel\.host",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.on_event("startup")
+def on_startup():
+    init_db()
 
 
 @app.get("/")
@@ -37,3 +44,6 @@ def health():
 def health_db():
     ok, detail = check_database_connection()
     return {"status": "ok" if ok else "error", "database": detail}
+
+
+app.include_router(orders_router)
