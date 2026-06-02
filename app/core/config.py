@@ -30,7 +30,6 @@ class Settings:
     database_url: str | None
     cors_origins: list[str]
     google_sheets_webhook_url: str | None
-    sheets_webhook_secret: str | None
     meta_pixel_id: str | None
     meta_access_token: str | None
     meta_api_version: str
@@ -59,10 +58,10 @@ class Settings:
                 "https://boyashop.store",
                 "https://www.boyashop.store",
                 "http://localhost:3000",
+                "http://127.0.0.1:3000",
             ]
 
         self.google_sheets_webhook_url = _env("GOOGLE_SHEETS_WEBHOOK_URL", "GOOGLE_SHEET_WEBHOOK_URL")
-        self.sheets_webhook_secret = _env("SHEETS_WEBHOOK_SECRET", "SECRET_KEY")
 
         self.meta_pixel_id = _env("META_PIXEL_ID", "FACEBOOK_PIXEL_ID")
         self.meta_access_token = _env("META_ACCESS_TOKEN", "FACEBOOK_CAPI_TOKEN")

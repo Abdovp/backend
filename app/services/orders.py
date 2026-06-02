@@ -1,7 +1,6 @@
 import json
 import logging
 
-import requests
 from sqlalchemy.orm import Session
 
 from app.models.order import Order, OrderItem
@@ -97,33 +96,3 @@ def create_order(db: Session, data: OrderCreate, client_ip: str | None, user_age
     db.commit()
     db.refresh(order)
     return order, sent
-
-
-def notify_google_sheet(order: Order, webhook_url: str | None) -> None:
-    if not webhook_url:
-        return
-
-    payload = {
-        "order_id": order.id,
-        "event_id": order.event_id,
-        "name": order.customer_name,
-        "phone": order.phone,
-        "address": order.address,
-        "total": float(order.total),
-        "status": order.status,
-        "items": [
-            {
-                "product_id": item.product_id,
-                "name": item.product_name,
-                "offer": item.offer,
-                "quantity": item.quantity,
-                "price": float(item.unit_price),
-            }
-            for item in order.items
-        ],
-    }
-
-    try:
-        requests.post(webhook_url, json=payload, timeout=10)
-    except Exception as exc:
-        logger.warning("Google Sheet webhook failed: %s", exc)

@@ -4,6 +4,7 @@ from pydantic import BaseModel, Field
 class OrderItemCreate(BaseModel):
     product_id: str
     product_name: str
+    sku: str | None = None
     offer: int = Field(ge=1, le=3)
     quantity: int = Field(ge=1, default=1)
     unit_price: float = Field(gt=0)
@@ -36,6 +37,7 @@ class OrderItemResponse(BaseModel):
 
 class OrderResponse(BaseModel):
     id: int
+    public_order_id: str
     event_id: str
     status: str
     total: float
