@@ -5,9 +5,10 @@ from sqlalchemy.orm import Session
 
 from app.models.order import Order, OrderItem
 from app.models.tracking import TrackingEvent
-from app.schemas.order import OrderCreate
+from app.schemas.order import OrderCreate, UpsellItemCreate
 from app.services.capi import dispatch_purchase_events
 from app.services.phone import normalize_moroccan_phone, validate_moroccan_phone
+from app.services.sheet_webhook import notify_google_sheet
 
 logger = logging.getLogger(__name__)
 
@@ -96,3 +97,62 @@ def create_order(db: Session, data: OrderCreate, client_ip: str | None, user_age
     db.commit()
     db.refresh(order)
     return order, sent
+
+
+def finalize_order_for_sheet(
+    db: Session,
+    order_id: int,
+    event_id: str,
+    upsell: UpsellItemCreate | None,
+    webhook_url: str | None,
+) -> tuple[Order, bool]:
+    order = db.query(Order).filter(Order.id == order_id).first()
+    if order is None or order.event_id != event_id:
+        raise ValueError("not_found")
+
+    already_sent = (
+        db.query(TrackingEvent)
+        .filter(
+            TrackingEvent.order_id == order_id,
+            TrackingEvent.event_name == "SheetNotify",
+        )
+        .first()
+        is not None
+    )
+    if already_sent:
+        db.refresh(order)
+        return order, True
+
+    if upsell is not None:
+        has_upsell = any(
+            item.product_id == upsell.product_id and item.is_upsell for item in order.items
+        )
+        if not has_upsell:
+            line_total = round(upsell.unit_price * upsell.quantity, 2)
+            order.items.append(
+                OrderItem(
+                    product_id=upsell.product_id,
+                    product_name=upsell.product_name,
+                    offer=upsell.offer,
+                    quantity=upsell.quantity,
+                    unit_price=upsell.unit_price,
+                    line_total=line_total,
+                    is_upsell=True,
+                )
+            )
+            order.total = round(float(order.total) + line_total, 2)
+
+    db.add(
+        TrackingEvent(
+            event_id=event_id,
+            event_name="SheetNotify",
+            order_id=order.id,
+            event_data=json.dumps({"total": float(order.total)}, ensure_ascii=False),
+            platforms="google_sheet",
+        )
+    )
+    db.commit()
+    db.refresh(order)
+
+    notify_google_sheet(order, webhook_url)
+    return order, False

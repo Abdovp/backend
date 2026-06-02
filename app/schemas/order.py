@@ -43,3 +43,22 @@ class OrderResponse(BaseModel):
     total: float
     items: list[OrderItemResponse]
     capi_sent: list[str]
+
+
+class UpsellItemCreate(BaseModel):
+    product_id: str
+    product_name: str
+    unit_price: float = Field(gt=0)
+    offer: int = Field(ge=1, le=3, default=1)
+    quantity: int = Field(ge=1, default=1)
+
+
+class OrderFinalize(BaseModel):
+    event_id: str = Field(min_length=8, max_length=64)
+    upsell: UpsellItemCreate | None = None
+
+
+class OrderFinalizeResponse(BaseModel):
+    ok: bool = True
+    total: float
+    already_sent: bool = False
