@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import logging
 
 from app.core.config import get_settings
+from app.api.admin import router as admin_router
 from app.api.events import router as events_router
 from app.api.orders import router as orders_router
 from app.database import (
@@ -78,3 +79,4 @@ def health_db():
 
 app.include_router(orders_router)
 app.include_router(events_router)
+app.include_router(admin_router)

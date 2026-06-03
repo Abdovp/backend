@@ -16,7 +16,11 @@ class Order(Base):
     phone: Mapped[str] = mapped_column(String(32))
     total: Mapped[float] = mapped_column(Numeric(10, 2))
     status: Mapped[str] = mapped_column(String(32), default="pending")
+    client_ip: Mapped[str | None] = mapped_column(String(45), nullable=True)
+    country_code: Mapped[str | None] = mapped_column(String(2), nullable=True, index=True)
+    admin_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
     items: Mapped[list["OrderItem"]] = relationship(
         back_populates="order",

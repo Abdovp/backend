@@ -13,6 +13,7 @@ from app.schemas.order import (
     OrderItemResponse,
     OrderResponse,
 )
+from app.services.ip_geo import get_client_ip
 from app.services.orders import create_order, finalize_order_for_sheet
 from app.services.sheet_webhook import make_boya_order_id
 
@@ -28,7 +29,7 @@ def submit_order(payload: OrderCreate, request: Request, db: Session = Depends(g
     if not db_ok:
         raise HTTPException(status_code=503, detail="Database unavailable")
 
-    client_ip = request.client.host if request.client else None
+    client_ip = get_client_ip(request)
     user_agent = request.headers.get("user-agent")
 
     try:

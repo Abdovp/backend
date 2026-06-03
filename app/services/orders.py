@@ -7,6 +7,7 @@ from app.models.order import Order, OrderItem
 from app.models.tracking import TrackingEvent
 from app.schemas.order import OrderCreate, UpsellItemCreate
 from app.services.capi import dispatch_purchase_events
+from app.services.ip_geo import resolve_country_code
 from app.services.phone import normalize_moroccan_phone, validate_moroccan_phone
 from app.services.sheet_webhook import notify_google_sheet
 
@@ -20,6 +21,9 @@ def create_order(db: Session, data: OrderCreate, client_ip: str | None, user_age
     phone = normalize_moroccan_phone(data.phone)
     assert phone is not None
 
+    resolved_ip = data.client_ip or client_ip
+    country_code = resolve_country_code(resolved_ip)
+
     order = Order(
         event_id=data.event_id,
         customer_name=data.customer_name.strip(),
@@ -27,6 +31,8 @@ def create_order(db: Session, data: OrderCreate, client_ip: str | None, user_age
         phone=phone,
         total=data.total,
         status="pending",
+        client_ip=resolved_ip,
+        country_code=country_code,
     )
 
     for item in data.items:
@@ -52,7 +58,7 @@ def create_order(db: Session, data: OrderCreate, client_ip: str | None, user_age
         "customer_name": order.customer_name,
         "phone": order.phone,
         "source_url": data.source_url,
-        "client_ip": data.client_ip or client_ip,
+        "client_ip": resolved_ip,
         "user_agent": data.user_agent or user_agent,
         "fbp": data.fbp,
         "fbc": data.fbc,
@@ -91,6 +97,8 @@ def create_order(db: Session, data: OrderCreate, client_ip: str | None, user_age
                 ensure_ascii=False,
             ),
             platforms=",".join(sent),
+            client_ip=resolved_ip,
+            country_code=country_code,
         )
     )
 

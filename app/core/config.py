@@ -42,6 +42,10 @@ class Settings:
     enable_meta_capi: bool
     enable_tiktok_capi: bool
     enable_snap_capi: bool
+    admin_username: str | None
+    admin_password: str | None
+    admin_jwt_secret: str | None
+    admin_jwt_expire_hours: int
 
     def __init__(self):
         self.app_env = _env("APP_ENV") or "production"
@@ -78,6 +82,11 @@ class Settings:
         self.enable_meta_capi = _env_bool("ENABLE_META_CAPI", True)
         self.enable_tiktok_capi = _env_bool("ENABLE_TIKTOK_CAPI", True)
         self.enable_snap_capi = _env_bool("ENABLE_SNAP_CAPI", True)
+
+        self.admin_username = _env("ADMIN_USERNAME", "ADMIN_USER")
+        self.admin_password = _env("ADMIN_PASSWORD", "ADMIN_PASS")
+        self.admin_jwt_secret = _env("ADMIN_JWT_SECRET", "ADMIN_SECRET")
+        self.admin_jwt_expire_hours = int(_env("ADMIN_JWT_EXPIRE_HOURS") or "24")
 
     # Backward-compatible aliases used elsewhere in the codebase.
     @property
