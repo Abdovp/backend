@@ -14,7 +14,7 @@ class OrderItemCreate(BaseModel):
 class OrderCreate(BaseModel):
     event_id: str = Field(min_length=8, max_length=64)
     customer_name: str = Field(min_length=2, max_length=255)
-    address: str = Field(min_length=3)
+    address: str = Field(default="", max_length=500)
     phone: str = Field(min_length=8, max_length=32)
     items: list[OrderItemCreate] = Field(min_length=1)
     total: float = Field(gt=0)
