@@ -1,5 +1,5 @@
 from dotenv import load_dotenv
-from sqlalchemy import func, select
+from sqlalchemy import func, select, text
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import logging
@@ -55,6 +55,7 @@ def health_db():
     tables = get_existing_tables() if ok else []
     missing = [name for name in ("orders", "order_items", "tracking_events", "alembic_version") if name not in tables]
     stats = {}
+    migration = {}
     if ok and not missing:
         engine = get_engine()
         if engine:
@@ -67,6 +68,47 @@ def health_db():
                     "order_items": db.scalar(select(func.count()).select_from(OrderItem)) or 0,
                     "tracking_events": db.scalar(select(func.count()).select_from(TrackingEvent)) or 0,
                 }
+                try:
+                    morocco_events = db.scalar(
+                        select(func.count())
+                        .select_from(TrackingEvent)
+                        .where(TrackingEvent.country_code == "MA")
+                    ) or 0
+                    morocco_orders = db.scalar(
+                        select(func.count()).select_from(Order).where(Order.country_code == "MA")
+                    ) or 0
+                    stats["morocco_tracking_events"] = morocco_events
+                    stats["morocco_orders"] = morocco_orders
+                except Exception:
+                    stats["morocco_tracking_events"] = None
+                    stats["morocco_orders"] = None
+
+                try:
+                    alembic_version = db.scalar(text("SELECT version_num FROM alembic_version LIMIT 1"))
+                    admin_columns = db.execute(
+                        text(
+                            """
+                            SELECT COUNT(*) FROM information_schema.columns
+                            WHERE table_schema = 'public'
+                              AND (
+                                (table_name = 'orders' AND column_name IN ('client_ip', 'country_code', 'admin_notes', 'updated_at'))
+                                OR (table_name = 'tracking_events' AND column_name IN ('client_ip', 'country_code'))
+                              )
+                            """
+                        )
+                    ).scalar()
+                    migration = {
+                        "alembic_version": alembic_version,
+                        "admin_columns_ready": admin_columns == 6,
+                        "admin_columns_found": admin_columns,
+                    }
+                except Exception as exc:
+                    migration = {"error": str(exc)}
+
+    admin_configured = bool(
+        settings.admin_username and settings.admin_password and settings.admin_jwt_secret
+    )
+
     return {
         "status": "ok" if ok and not missing else "error",
         "database": detail,
@@ -74,6 +116,8 @@ def health_db():
         "tables": tables,
         "missing_tables": missing,
         "stats": stats,
+        "migration": migration,
+        "admin_configured": admin_configured,
     }
 
 
