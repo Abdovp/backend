@@ -45,7 +45,6 @@ def build_sheet_row(order: Order, *, public_order_id: str | None = None) -> dict
         "orderid": order_id,
         "nom": order.customer_name.strip(),
         "téléphone": format_phone_for_sheet(order.phone),
-        "adress": order.address.strip(),
         "produit": produit,
         "sku": sku,
         "QTé": qte,
