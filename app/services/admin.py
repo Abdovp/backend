@@ -19,11 +19,11 @@ from app.schemas.admin import (
 from app.services.sheet_webhook import make_boya_order_id
 
 FUNNEL_EVENTS = [
-    ("PageView", "زيارات"),
-    ("ViewContent", "عرض المنتج"),
-    ("AddToCart", "إضافة للسلة"),
-    ("InitiateCheckout", "بدء الشراء"),
-    ("Purchase", "طلبات"),
+    ("PageView", "Visits"),
+    ("ViewContent", "View Product"),
+    ("AddToCart", "Add to Cart"),
+    ("InitiateCheckout", "Initiate Checkout"),
+    ("Purchase", "Orders"),
 ]
 
 ORDER_STATUSES = ("pending", "confirmed", "shipped", "delivered", "cancelled", "returned")
