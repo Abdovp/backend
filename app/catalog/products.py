@@ -21,6 +21,11 @@ PRODUCT_CATALOG: dict[str, CatalogProduct] = {
         sku="BOYA-MH-9153",
         name_ar="حامل الهاتف المغناطيسي للسيارة",
     ),
+    "car-vacuum": CatalogProduct(
+        product_id="car-vacuum",
+        sku="BOYA-CV-4471",
+        name_ar="مكنسة السيارة 3 في 1",
+    ),
 }
 
 
