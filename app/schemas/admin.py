@@ -60,6 +60,7 @@ class AdminMetricsResponse(BaseModel):
     cancelled_orders: int
     confirmation_rate: float
     delivery_rate: float
+    cancellation_rate: float
     funnel: list[FunnelStep]
     daily: list[DailyMetric]
     top_products: list[ProductMetric]

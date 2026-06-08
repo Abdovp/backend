@@ -102,6 +102,8 @@ def get_admin_metrics(
         round((confirmed_orders / actionable_orders) * 100, 2) if actionable_orders else 0.0
     )
     delivery_rate = round((delivered_orders / confirmed_orders) * 100, 2) if confirmed_orders else 0.0
+    cancelled_orders = status_counts["cancelled"]
+    cancellation_rate = round((cancelled_orders / order_count) * 100, 2) if order_count else 0.0
 
     funnel_values = [
         page_views,
@@ -186,9 +188,10 @@ def get_admin_metrics(
         confirmed_orders=confirmed_orders,
         shipped_orders=status_counts["shipped"],
         delivered_orders=delivered_orders,
-        cancelled_orders=status_counts["cancelled"],
+        cancelled_orders=cancelled_orders,
         confirmation_rate=confirmation_rate,
         delivery_rate=delivery_rate,
+        cancellation_rate=cancellation_rate,
         funnel=funnel,
         daily=daily,
         top_products=top_products,
