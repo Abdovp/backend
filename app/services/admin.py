@@ -27,6 +27,8 @@ FUNNEL_EVENTS = [
 ]
 
 ORDER_STATUSES = ("pending", "confirmed", "shipped", "delivered", "cancelled", "returned")
+CONFIRMED_PIPELINE_STATUSES = frozenset({"confirmed", "shipped", "delivered"})
+DELIVERED_STATUSES = frozenset({"delivered"})
 
 
 def _day_bounds(from_date: date, to_date: date) -> tuple[datetime, datetime]:
@@ -89,10 +91,17 @@ def get_admin_metrics(
     upsell_rate = round((upsell_orders / order_count) * 100, 2) if order_count else 0.0
 
     status_counts = {status: 0 for status in ORDER_STATUSES}
-    all_orders = db.scalars(select(Order)).all()
-    for order in all_orders:
+    for order in orders:
         if order.status in status_counts:
             status_counts[order.status] += 1
+
+    confirmed_orders = sum(status_counts[status] for status in CONFIRMED_PIPELINE_STATUSES)
+    delivered_orders = status_counts["delivered"]
+    actionable_orders = order_count - status_counts["cancelled"] - status_counts["returned"]
+    confirmation_rate = (
+        round((confirmed_orders / actionable_orders) * 100, 2) if actionable_orders else 0.0
+    )
+    delivery_rate = round((delivered_orders / confirmed_orders) * 100, 2) if confirmed_orders else 0.0
 
     funnel_values = [
         page_views,
@@ -174,10 +183,12 @@ def get_admin_metrics(
         upsell_orders=upsell_orders,
         upsell_rate=upsell_rate,
         pending_orders=status_counts["pending"],
-        confirmed_orders=status_counts["confirmed"],
+        confirmed_orders=confirmed_orders,
         shipped_orders=status_counts["shipped"],
-        delivered_orders=status_counts["delivered"],
+        delivered_orders=delivered_orders,
         cancelled_orders=status_counts["cancelled"],
+        confirmation_rate=confirmation_rate,
+        delivery_rate=delivery_rate,
         funnel=funnel,
         daily=daily,
         top_products=top_products,
