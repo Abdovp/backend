@@ -62,6 +62,8 @@ def create_order(db: Session, data: OrderCreate, client_ip: str | None, user_age
         "user_agent": data.user_agent or user_agent,
         "fbp": data.fbp,
         "fbc": data.fbc,
+        "ttp": data.ttp,
+        "ttclid": data.ttclid,
         "items": [
             {
                 "product_id": item.product_id,

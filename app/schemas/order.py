@@ -23,6 +23,8 @@ class OrderCreate(BaseModel):
     client_ip: str | None = None
     fbp: str | None = None
     fbc: str | None = None
+    ttp: str | None = None
+    ttclid: str | None = None
 
 
 class OrderItemResponse(BaseModel):

@@ -88,20 +88,26 @@ def send_tiktok_purchase(payload: dict[str, Any]) -> bool:
     user_data: dict[str, Any] = {}
     if phone:
         user_data["phone_number"] = sha256(phone)
+    if payload.get("ttp"):
+        user_data["ttp"] = payload["ttp"]
+
+    context: dict[str, Any] = {
+        "user": user_data,
+        "page": {"url": payload.get("source_url") or f"{settings.frontend_url.rstrip('/')}/thank-you"},
+    }
     if payload.get("client_ip"):
-        user_data["ip"] = payload["client_ip"]
+        context["ip"] = payload["client_ip"]
     if payload.get("user_agent"):
-        user_data["user_agent"] = payload["user_agent"]
+        context["user_agent"] = payload["user_agent"]
+    if payload.get("ttclid"):
+        context["ad"] = {"callback": payload["ttclid"]}
 
     body = {
         "pixel_code": settings.tiktok_pixel_id,
         "event": "CompletePayment",
         "event_id": payload["event_id"],
         "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "context": {
-            "user": user_data,
-            "page": {"url": payload.get("source_url")},
-        },
+        "context": context,
         "properties": {
             "currency": "MAD",
             "value": value,
@@ -118,10 +124,14 @@ def send_tiktok_purchase(payload: dict[str, Any]) -> bool:
             json=body,
             timeout=10,
         )
-        response.raise_for_status()
         data = response.json()
-        if data.get("code") not in (0, None):
-            logger.warning("TikTok CAPI rejected event: %s", data)
+        if response.status_code >= 400 or data.get("code") not in (0, None):
+            logger.warning(
+                "TikTok CAPI rejected event (status=%s): %s body=%s",
+                response.status_code,
+                data,
+                body,
+            )
             return False
         return True
     except Exception as exc:
