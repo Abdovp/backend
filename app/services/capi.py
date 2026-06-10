@@ -104,7 +104,7 @@ def send_tiktok_purchase(payload: dict[str, Any]) -> bool:
 
     body = {
         "pixel_code": settings.tiktok_pixel_id,
-        "event": "CompletePayment",
+        "event": "Purchase",
         "event_id": payload["event_id"],
         "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "context": context,
