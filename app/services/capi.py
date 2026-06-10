@@ -1,5 +1,6 @@
 import logging
 import time
+from datetime import datetime, timezone
 from typing import Any
 
 import requests
@@ -15,9 +16,9 @@ def _contents(items: list[dict[str, Any]]) -> tuple[list[str], list[dict[str, An
     content_ids = [item["product_id"] for item in items]
     contents = [
         {
-            "id": item["product_id"],
+            "content_id": item["product_id"],
             "quantity": item["quantity"],
-            "item_price": float(item["unit_price"]),
+            "price": float(item["unit_price"]),
         }
         for item in items
     ]
@@ -86,7 +87,7 @@ def send_tiktok_purchase(payload: dict[str, Any]) -> bool:
     content_ids, contents, value = _contents(payload["items"])
     user_data: dict[str, Any] = {}
     if phone:
-        user_data["phone_number"] = phone
+        user_data["phone_number"] = sha256(phone)
     if payload.get("client_ip"):
         user_data["ip"] = payload["client_ip"]
     if payload.get("user_agent"):
@@ -94,9 +95,9 @@ def send_tiktok_purchase(payload: dict[str, Any]) -> bool:
 
     body = {
         "pixel_code": settings.tiktok_pixel_id,
-        "event": payload["event_name"],
+        "event": "CompletePayment",
         "event_id": payload["event_id"],
-        "timestamp": int(time.time()),
+        "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "context": {
             "user": user_data,
             "page": {"url": payload.get("source_url")},
@@ -112,12 +113,16 @@ def send_tiktok_purchase(payload: dict[str, Any]) -> bool:
 
     try:
         response = requests.post(
-            f"https://business-api.tiktok.com/open_api/{settings.tiktok_api_version}/event/track/",
+            f"https://business-api.tiktok.com/open_api/{settings.tiktok_api_version}/pixel/track/",
             headers={"Access-Token": settings.tiktok_capi_token, "Content-Type": "application/json"},
             json=body,
             timeout=10,
         )
         response.raise_for_status()
+        data = response.json()
+        if data.get("code") not in (0, None):
+            logger.warning("TikTok CAPI rejected event: %s", data)
+            return False
         return True
     except Exception as exc:
         logger.warning("TikTok CAPI failed: %s", exc)
