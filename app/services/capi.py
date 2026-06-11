@@ -6,13 +6,27 @@ from typing import Any
 import requests
 
 from app.core.config import get_settings
-from app.services.hashing import hash_name, sha256
+from app.services.hashing import hash_name, hash_phone
 from app.services.phone import normalize_moroccan_phone
 
 logger = logging.getLogger(__name__)
 
 
-def _contents(items: list[dict[str, Any]]) -> tuple[list[str], list[dict[str, Any]], float]:
+def _meta_contents(items: list[dict[str, Any]]) -> tuple[list[str], list[dict[str, Any]], float]:
+    content_ids = [item["product_id"] for item in items]
+    contents = [
+        {
+            "id": item["product_id"],
+            "quantity": item["quantity"],
+            "item_price": float(item["unit_price"]),
+        }
+        for item in items
+    ]
+    value = sum(float(item["line_total"]) for item in items)
+    return content_ids, contents, value
+
+
+def _tiktok_contents(items: list[dict[str, Any]]) -> tuple[list[str], list[dict[str, Any]], float]:
     content_ids = [item["product_id"] for item in items]
     contents = [
         {
@@ -32,10 +46,13 @@ def send_facebook_purchase(payload: dict[str, Any]) -> bool:
         return False
 
     phone = normalize_moroccan_phone(payload["phone"])
-    user_data: dict[str, Any] = {
-        "ph": [sha256(phone)] if phone else [],
-        "fn": [hash_name(payload["customer_name"])] if payload.get("customer_name") else [],
-    }
+    user_data: dict[str, Any] = {}
+    if phone:
+        user_data["ph"] = [hash_phone(phone)]
+    if payload.get("customer_name"):
+        hashed_name = hash_name(payload["customer_name"])
+        if hashed_name:
+            user_data["fn"] = [hashed_name]
     if payload.get("client_ip"):
         user_data["client_ip_address"] = payload["client_ip"]
     if payload.get("user_agent"):
@@ -45,7 +62,7 @@ def send_facebook_purchase(payload: dict[str, Any]) -> bool:
     if payload.get("fbc"):
         user_data["fbc"] = payload["fbc"]
 
-    content_ids, contents, value = _contents(payload["items"])
+    content_ids, contents, value = _meta_contents(payload["items"])
     event = {
         "event_name": payload["event_name"],
         "event_time": int(time.time()),
@@ -71,7 +88,10 @@ def send_facebook_purchase(payload: dict[str, Any]) -> bool:
             json={"data": [event]},
             timeout=10,
         )
-        response.raise_for_status()
+        data = response.json()
+        if response.status_code >= 400 or data.get("error"):
+            logger.warning("Facebook CAPI rejected event (status=%s): %s", response.status_code, data)
+            return False
         return True
     except Exception as exc:
         logger.warning("Facebook CAPI failed: %s", exc)
@@ -84,10 +104,10 @@ def send_tiktok_purchase(payload: dict[str, Any]) -> bool:
         return False
 
     phone = normalize_moroccan_phone(payload["phone"])
-    content_ids, contents, value = _contents(payload["items"])
+    content_ids, contents, value = _tiktok_contents(payload["items"])
     user_data: dict[str, Any] = {}
     if phone:
-        user_data["phone_number"] = sha256(phone)
+        user_data["phone_number"] = hash_phone(phone)
     if payload.get("ttp"):
         user_data["ttp"] = payload["ttp"]
 
@@ -127,10 +147,9 @@ def send_tiktok_purchase(payload: dict[str, Any]) -> bool:
         data = response.json()
         if response.status_code >= 400 or data.get("code") not in (0, None):
             logger.warning(
-                "TikTok CAPI rejected event (status=%s): %s body=%s",
+                "TikTok CAPI rejected event (status=%s): %s",
                 response.status_code,
                 data,
-                body,
             )
             return False
         return True
@@ -145,26 +164,24 @@ def send_snapchat_purchase(payload: dict[str, Any]) -> bool:
         return False
 
     phone = normalize_moroccan_phone(payload["phone"])
-    _, contents, value = _contents(payload["items"])
-    user_data: dict[str, Any] = {}
-    if phone:
-        user_data["phone_number"] = sha256(phone)
-    if payload.get("client_ip"):
-        user_data["client_ip_address"] = payload["client_ip"]
+    content_ids, _, value = _tiktok_contents(payload["items"])
+    event_id = payload["event_id"]
+    order_ref = str(payload.get("order_id", event_id))
 
     body = {
         "pixel_id": settings.snapchat_pixel_id,
         "event_type": "PURCHASE",
         "event_conversion_type": "WEB",
-        "event_tag": payload["event_id"],
+        "event_tag": event_id,
+        "client_dedup_id": event_id,
+        "transaction_id": order_ref,
         "timestamp": int(time.time() * 1000),
-        "hashed_email": [],
-        "hashed_phone_number": [user_data["phone_number"]] if user_data.get("phone_number") else [],
+        "hashed_phone_number": [hash_phone(phone)] if phone else [],
         "user_agent": payload.get("user_agent"),
         "page_url": payload.get("source_url"),
         "price": value,
         "currency": "MAD",
-        "item_ids": [item["product_id"] for item in payload["items"]],
+        "item_ids": content_ids,
         "number_items": sum(item["quantity"] for item in payload["items"]),
     }
 
@@ -178,7 +195,13 @@ def send_snapchat_purchase(payload: dict[str, Any]) -> bool:
             json=body,
             timeout=10,
         )
-        response.raise_for_status()
+        if response.status_code >= 400:
+            logger.warning(
+                "Snapchat CAPI rejected event (status=%s): %s",
+                response.status_code,
+                response.text[:500],
+            )
+            return False
         return True
     except Exception as exc:
         logger.warning("Snapchat CAPI failed: %s", exc)
