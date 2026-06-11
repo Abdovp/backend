@@ -6,7 +6,7 @@ from typing import Any
 import requests
 
 from app.core.config import get_settings
-from app.services.hashing import hash_name, hash_phone
+from app.services.hashing import hash_name, hash_phone, hash_phone_tiktok
 from app.services.phone import normalize_moroccan_phone
 
 logger = logging.getLogger(__name__)
@@ -107,7 +107,7 @@ def send_tiktok_purchase(payload: dict[str, Any]) -> bool:
     content_ids, contents, value = _tiktok_contents(payload["items"])
     user_data: dict[str, Any] = {}
     if phone:
-        user_data["phone_number"] = hash_phone(phone)
+        user_data["phone_number"] = hash_phone_tiktok(phone)
     if payload.get("ttp"):
         user_data["ttp"] = payload["ttp"]
 
