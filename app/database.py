@@ -61,7 +61,11 @@ def get_engine() -> Engine | None:
     if not url:
         return None
     if _engine is None:
-        _engine = create_engine(url, pool_pre_ping=True)
+        _engine = create_engine(
+            url,
+            pool_pre_ping=True,
+            connect_args={"connect_timeout": 5},
+        )
         SessionLocal.configure(bind=_engine)
     return _engine
 
