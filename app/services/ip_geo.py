@@ -38,7 +38,7 @@ MOROCCO_CIDRS = [
     "196.1.128.0/18",
 ]
 
-_MOROCCO_NETWORKS = tuple(ipaddress.ip_network(cidr) for cidr in MOROCCO_CIDRS)
+_MOROCCO_NETWORKS = tuple(ipaddress.ip_network(cidr, strict=False) for cidr in MOROCCO_CIDRS)
 
 
 def get_client_ip(request: Request) -> str | None:
