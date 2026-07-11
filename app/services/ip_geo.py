@@ -10,13 +10,13 @@ logger = logging.getLogger(__name__)
 # Verified Morocco allocations (AFRINIC / RIPE). External lookup used as fallback.
 MOROCCO_CIDRS = [
     # Maroc Telecom / IAM
-    "196.96.0.0/11",      # 196.96.0.0 – 196.127.255.255 (covers 196.119.x.x)
-    "41.92.0.0/13",
+    "196.96.0.0/11",
+    "41.88.0.0/13",
     "41.248.0.0/13",
     "105.152.0.0/13",
     "196.12.0.0/15",
     # Orange Morocco (Méditelecom)
-    "41.140.0.0/13",
+    "41.136.0.0/13",
     "196.32.0.0/15",
     "196.34.0.0/16",
     # Inwi (Wana Corporate)
