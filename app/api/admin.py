@@ -12,6 +12,7 @@ from app.schemas.admin import (
     AdminOrderListResponse,
     AdminOrderUpdate,
 )
+from app.core.config import get_settings
 from app.services.admin import get_admin_metrics, get_admin_order, list_admin_orders, update_admin_order
 from app.services.auth import authenticate_admin, create_admin_token
 
@@ -44,7 +45,8 @@ def admin_metrics(
     end = to_date or today
     if start > end:
         raise HTTPException(status_code=422, detail="'from' must be before 'to'")
-    return get_admin_metrics(db, start, end, morocco_only=morocco_only)
+    settings = get_settings()
+    return get_admin_metrics(db, start, end, morocco_only=morocco_only, exclude_ips=settings.blocked_ips or None)
 
 
 @router.get("/orders", response_model=AdminOrderListResponse)

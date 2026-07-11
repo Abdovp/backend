@@ -50,6 +50,7 @@ def get_admin_metrics(
     from_date: date,
     to_date: date,
     morocco_only: bool = True,
+    exclude_ips: list[str] | None = None,
 ) -> AdminMetricsResponse:
     start, end = _day_bounds(from_date, to_date)
 
@@ -60,6 +61,8 @@ def get_admin_metrics(
     ]
     if morocco_only:
         event_filters.append(_morocco_event_filter())
+    if exclude_ips:
+        event_filters.append(or_(TrackingEvent.client_ip == None, TrackingEvent.client_ip.not_in(exclude_ips)))
 
     event_counts = dict(
         db.execute(
@@ -72,6 +75,8 @@ def get_admin_metrics(
     order_filters = [Order.created_at >= start, Order.created_at < end]
     if morocco_only:
         order_filters.append(_morocco_order_filter())
+    if exclude_ips:
+        order_filters.append(or_(Order.client_ip == None, Order.client_ip.not_in(exclude_ips)))
 
     orders = db.scalars(select(Order).where(*order_filters).options(joinedload(Order.items))).unique().all()
     order_count = len(orders)
@@ -130,6 +135,8 @@ def get_admin_metrics(
         ]
         if morocco_only:
             day_event_filters.append(_morocco_event_filter())
+        if exclude_ips:
+            day_event_filters.append(or_(TrackingEvent.client_ip == None, TrackingEvent.client_ip.not_in(exclude_ips)))
         day_views = db.scalar(
             select(func.count()).select_from(TrackingEvent).where(*day_event_filters)
         ) or 0
@@ -137,6 +144,8 @@ def get_admin_metrics(
         day_order_filters = [Order.created_at >= day_start, Order.created_at < day_end]
         if morocco_only:
             day_order_filters.append(_morocco_order_filter())
+        if exclude_ips:
+            day_order_filters.append(or_(Order.client_ip == None, Order.client_ip.not_in(exclude_ips)))
         day_orders = db.scalars(select(Order).where(*day_order_filters)).all()
         day_revenue = round(sum(float(order.total) for order in day_orders), 2)
         daily.append(
@@ -224,7 +233,7 @@ def _order_capi_platforms(db: Session, order_id: int) -> list[str]:
     return [part.strip() for part in row.platforms.split(",") if part.strip()]
 
 
-def _to_summary(order: Order, sheet_sent: bool) -> AdminOrderSummary:
+def _to_summary(order: Order, sheet_sent: bool, capi_platforms: list[str] | None = None) -> AdminOrderSummary:
     return AdminOrderSummary(
         id=order.id,
         public_order_id=make_boya_order_id(order.id),
@@ -239,6 +248,7 @@ def _to_summary(order: Order, sheet_sent: bool) -> AdminOrderSummary:
         sheet_sent=sheet_sent,
         created_at=order.created_at,
         item_count=len(order.items),
+        capi_platforms=capi_platforms or [],
     )
 
 
@@ -281,7 +291,22 @@ def list_admin_orders(
         .offset(offset)
         .limit(limit)
     ).unique().all()
-    items = [_to_summary(order, _order_has_sheet(db, order.id)) for order in orders]
+
+    order_ids = [o.id for o in orders]
+    platform_rows = db.execute(
+        select(TrackingEvent.order_id, TrackingEvent.platforms)
+        .where(
+            TrackingEvent.order_id.in_(order_ids),
+            TrackingEvent.event_name == "Purchase",
+        )
+        .distinct(TrackingEvent.order_id)
+    ).all()
+    platforms_by_order: dict[int, list[str]] = {}
+    for row in platform_rows:
+        if row.order_id and row.platforms:
+            platforms_by_order[row.order_id] = [p.strip() for p in row.platforms.split(",") if p.strip()]
+
+    items = [_to_summary(order, _order_has_sheet(db, order.id), platforms_by_order.get(order.id)) for order in orders]
 
     return AdminOrderListResponse(items=items, total=total, page=page, limit=limit, pages=pages)
 

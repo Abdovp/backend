@@ -88,6 +88,9 @@ class Settings:
         self.admin_jwt_secret = _env("ADMIN_JWT_SECRET", "ADMIN_SECRET")
         self.admin_jwt_expire_hours = int(_env("ADMIN_JWT_EXPIRE_HOURS") or "24")
 
+        blocked_raw = _env("BLOCKED_IPS") or ""
+        self.blocked_ips: list[str] = [ip.strip() for ip in blocked_raw.split(",") if ip.strip()]
+
     # Backward-compatible aliases used elsewhere in the codebase.
     @property
     def facebook_pixel_id(self) -> str | None:

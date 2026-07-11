@@ -90,6 +90,7 @@ class AdminOrderSummary(BaseModel):
     sheet_sent: bool
     created_at: datetime
     item_count: int
+    capi_platforms: list[str] = []
 
 
 class AdminOrderListResponse(BaseModel):
