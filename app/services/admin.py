@@ -318,7 +318,7 @@ def get_admin_order(db: Session, order_id: int) -> AdminOrderDetail | None:
     if order is None:
         return None
 
-    summary = _to_summary(order, _order_has_sheet(db, order.id))
+    summary = _to_summary(order, _order_has_sheet(db, order.id), _order_capi_platforms(db, order.id))
     return AdminOrderDetail(
         **summary.model_dump(),
         admin_notes=order.admin_notes,
@@ -335,7 +335,6 @@ def get_admin_order(db: Session, order_id: int) -> AdminOrderDetail | None:
             )
             for item in order.items
         ],
-        capi_platforms=_order_capi_platforms(db, order.id),
     )
 
 
