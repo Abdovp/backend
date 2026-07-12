@@ -57,7 +57,7 @@ def get_admin_metrics(
     event_filters = [
         TrackingEvent.created_at >= start,
         TrackingEvent.created_at < end,
-        TrackingEvent.event_name.in_([name for name, _ in FUNNEL_EVENTS]),
+        TrackingEvent.event_name.in_([name for name, _ in FUNNEL_EVENTS if name != "PageView"]),
     ]
     if morocco_only:
         event_filters.append(_morocco_event_filter())
@@ -83,7 +83,17 @@ def get_admin_metrics(
     revenue = round(sum(float(order.total) for order in orders), 2)
     aov = round(revenue / order_count, 2) if order_count else 0.0
 
-    page_views = int(event_counts.get("PageView", 0))
+    page_view_filters = [
+        TrackingEvent.created_at >= start,
+        TrackingEvent.created_at < end,
+        TrackingEvent.event_name == "PageView",
+    ]
+    if exclude_ips:
+        page_view_filters.append(or_(TrackingEvent.client_ip == None, TrackingEvent.client_ip.not_in(exclude_ips)))
+
+    page_views = int(
+        db.scalar(select(func.count()).select_from(TrackingEvent).where(*page_view_filters)) or 0
+    )
     view_content = int(event_counts.get("ViewContent", 0))
     add_to_cart = int(event_counts.get("AddToCart", 0))
     initiate_checkout = int(event_counts.get("InitiateCheckout", 0))
@@ -133,8 +143,6 @@ def get_admin_metrics(
             TrackingEvent.created_at < day_end,
             TrackingEvent.event_name == "PageView",
         ]
-        if morocco_only:
-            day_event_filters.append(_morocco_event_filter())
         if exclude_ips:
             day_event_filters.append(or_(TrackingEvent.client_ip == None, TrackingEvent.client_ip.not_in(exclude_ips)))
         day_views = db.scalar(
