@@ -26,6 +26,11 @@ PRODUCT_CATALOG: dict[str, CatalogProduct] = {
         sku="BOYA-CV-4471",
         name_ar="مكنسة السيارة 3 في 1",
     ),
+    "garden-sprinkler": CatalogProduct(
+        product_id="garden-sprinkler",
+        sku="BOYA-GS-3629",
+        name_ar="رشاش الحديقة الدوار 360 درجة",
+    ),
 }
 
 
