@@ -1,4 +1,4 @@
-/**
+what to put/**
  * Boya Shop — Google Sheets order webhook
  *
  * SETUP
@@ -25,12 +25,12 @@ function doPost(e) {
 
     sheet.appendRow([
       data.date || '',
-      data.orderid || '',
+      data['order id'] || data.orderid || '',
       data.nom || '',
-      data['téléphone'] || data.telephone || '',
+      data.telephone || data['téléphone'] || '',
       data.produit || '',
       data.sku || '',
-      data['QTé'] || data.qte || '',
+      data['Qté'] || data['QTé'] || data.qte || '',
       data['prix total'] || data.total || '',
     ]);
 
@@ -61,12 +61,12 @@ function ensureHeaders_(sheet) {
 
   sheet.appendRow([
     'date',
-    'orderid',
+    'order id',
     'nom',
-    'téléphone',
+    'telephone',
     'produit',
     'sku',
-    'QTé',
+    'Qté',
     'prix total',
   ]);
 }

@@ -42,12 +42,12 @@ def build_sheet_row(order: Order, *, public_order_id: str | None = None) -> dict
 
     return {
         "date": format_sheet_date(created),
-        "orderid": order_id,
+        "order id": order_id,
         "nom": order.customer_name.strip(),
-        "téléphone": format_phone_for_sheet(order.phone),
+        "telephone": format_phone_for_sheet(order.phone),
         "produit": produit,
         "sku": sku,
-        "QTé": qte,
+        "Qté": qte,
         "prix total": total_label,
     }
 
