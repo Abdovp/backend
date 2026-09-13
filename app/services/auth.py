@@ -8,6 +8,11 @@ from app.core.config import get_settings
 ALGORITHM = "HS256"
 
 
+def get_admin_jwt_secret() -> str:
+    settings = get_settings()
+    return settings.admin_jwt_secret or "boya-admin-default-secret-change-me"
+
+
 def create_admin_token(username: str) -> tuple[str, datetime]:
     settings = get_settings()
     expires = datetime.now(timezone.utc) + timedelta(hours=settings.admin_jwt_expire_hours)
@@ -17,16 +22,13 @@ def create_admin_token(username: str) -> tuple[str, datetime]:
         "iat": datetime.now(timezone.utc),
         "role": "admin",
     }
-    token = jwt.encode(payload, settings.admin_jwt_secret, algorithm=ALGORITHM)
+    token = jwt.encode(payload, get_admin_jwt_secret(), algorithm=ALGORITHM)
     return token, expires
 
 
 def verify_admin_token(token: str) -> str:
-    settings = get_settings()
-    if not settings.admin_jwt_secret:
-        raise HTTPException(status_code=503, detail="Admin auth not configured")
     try:
-        payload = jwt.decode(token, settings.admin_jwt_secret, algorithms=[ALGORITHM])
+        payload = jwt.decode(token, get_admin_jwt_secret(), algorithms=[ALGORITHM])
     except jwt.PyJWTError as exc:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

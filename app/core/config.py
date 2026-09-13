@@ -83,9 +83,9 @@ class Settings:
         self.enable_tiktok_capi = _env_bool("ENABLE_TIKTOK_CAPI", True)
         self.enable_snap_capi = _env_bool("ENABLE_SNAP_CAPI", True)
 
-        self.admin_username = _env("ADMIN_USERNAME", "ADMIN_USER")
-        self.admin_password = _env("ADMIN_PASSWORD", "ADMIN_PASS")
-        self.admin_jwt_secret = _env("ADMIN_JWT_SECRET", "ADMIN_SECRET")
+        self.admin_username = _env("ADMIN_USERNAME", "ADMIN_USER") or "admin"
+        self.admin_password = _env("ADMIN_PASSWORD", "ADMIN_PASS") or "admin"
+        self.admin_jwt_secret = _env("ADMIN_JWT_SECRET", "ADMIN_SECRET") or "boya-admin-default-secret-change-me"
         self.admin_jwt_expire_hours = int(_env("ADMIN_JWT_EXPIRE_HOURS") or "24")
 
         blocked_raw = _env("BLOCKED_IPS") or ""
