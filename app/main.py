@@ -3,6 +3,7 @@ from sqlalchemy import func, select, text
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import logging
+import os
 
 from app.core.config import get_settings
 from app.api.admin import router as admin_router
@@ -36,7 +37,16 @@ app.add_middleware(
 
 @app.on_event("startup")
 def on_startup():
-    init_db()
+    should_init_db = os.getenv("ENABLE_DB_INIT_ON_STARTUP", "").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }
+    if should_init_db:
+        init_db()
+    else:
+        logging.info("Skipping startup DB init (set ENABLE_DB_INIT_ON_STARTUP=true to enable)")
 
 
 @app.get("/")
