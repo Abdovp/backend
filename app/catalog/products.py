@@ -31,6 +31,11 @@ PRODUCT_CATALOG: dict[str, CatalogProduct] = {
         sku="BOYA-GS-3629",
         name_ar="رشاش الحديقة الدوار 360 درجة",
     ),
+    "car-charger": CatalogProduct(
+        product_id="car-charger",
+        sku="BOYA-CC-120W",
+        name_ar="شاحن السيارة السريع 120W",
+    ),
 }
 
 
